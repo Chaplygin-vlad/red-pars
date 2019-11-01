@@ -7,11 +7,27 @@ DB_HOST = "salt.db.elephantsql.com"
 DB_PORT = "5432"
 
 
-try:
-    conn= psycopg2.connect(database = DB_NAME, user = DB_USER,
+conn= psycopg2.connect(database = DB_NAME, user = DB_USER,
                            password=DB_PASS, host = DB_HOST, port=DB_PORT)
 
-    print ("Успешно")
+cur = conn.cursor()
+cur.execute("""
 
-except:
-    print ("херово")
+CREATE TABLE Reddit
+(
+HEADER TEXT NOT NULL,
+IMAGE TEXT NOT NULL,
+NEWS_LINK TEXT NOT NULL,
+ALL_TEXT TEXT NOT NULL,
+COMMENTS TEXT NOT NULL
+)
+
+""")
+try:
+    cur.execute ("drop table reddit")
+except Exception:
+    print ('Такой таблицы не существует')
+
+conn.commit()
+cur.close()
+conn.close()
