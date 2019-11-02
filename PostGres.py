@@ -31,3 +31,5 @@ except Exception:
 conn.commit()
 cur.close()
 conn.close()
+
+print('test')
