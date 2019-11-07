@@ -1,77 +1,94 @@
 from selenium import webdriver
-from flask import Flask
+from sanic import Sanic
+from sanic.response import text
 import postgres
+import Path
 
 
+def sanic_start():
 
-app = Flask(__name__)
+    app = Sanic()
 
-@app.route('/')
-def main_page():
-    return ('Приложение для парсинга Reddit.com')
+    @app.route("/")
+    async def main_page(request):
+        return text('Приложение для парсинга Reddit.com.  Добавьте к адресной строке "/search/<ваш запрос>" для поиска')
 
-@app.route('/<post_name>')
-def parsing_reddit(post_name):
-    urls = []
-    driver = webdriver.Firefox()
-    driver.get('https://www.reddit.com/search/?q=' + post_name)
-    news = driver.find_elements_by_xpath("//a[@class='SQnoC3ObvgnGjWt90zD9Z _2INHSNB8V5eaWp4P0rY_mE']")
-    all_text = []
-    comments = []
-    postgres.drop_sql()
-    postgres.create_sql()
-    for i in news[:5]:
-        a = i.get_attribute('href')
-        url = {
-            'href': a
-        }
-        urls.append(url)
-    for j in urls:
-        driver.get(j['href'])
-        try:
-            header = driver.find_element_by_xpath("//h1[@class='_eYtD2XCVieq6emjKBH3m']").text
-        except Exception:
-            header = ' '
-        try:
-            image = driver.find_element_by_xpath("//div[@class='_3Oa0THmZ3f5iZXAQ0hBJ0k ']//a").get_attribute('href')
-        except Exception:
-            image = 'Изображение отсутсвует'
-        try:
-            news_link = driver.find_element_by_xpath(
-                "//a[@class='_13svhQIUZqD9PVzFcLwOKT styled-outbound-link']").get_attribute('href')
-        except Exception:
-            news_link = 'Ссылка на внешний источник отсутсвует'
-        try:
-            text = driver.find_elements_by_xpath("//div[@data-click-id='text']/div/p")
-            for i in text:
-                all_text.append(i.text)
-            if all_text == []:
-                all_text = 'Текст поста отсутствует'
-        except Exception:
-            all_text = 'Текст поста отсутсвует'
-        try:
-            comment = driver.find_elements_by_xpath("//div[@class='_3tw__eCCe7j-epNCKGXUKk ']/div/div/p")
-            for i in comment[0:5]:
-                comments.append(i.text)
-            if comments == []:
-                comments = 'Комментарии отсутсвуют'
-        except Exception:
-            comments = 'Комментарии отсутсвуют'
 
-        data = {'header': header,
-                'image': image,
-                'news_link': news_link,
-                'all_text': all_text,
-                'comments': comments,
-                }
-        # print(data)
-        all_text = []
+    @app.route('/search/<post_name>')
+    async def parsing_reddit(request, post_name):
+        urls = []
+        driver = webdriver.Firefox()
+        driver.get('https://www.reddit.com/search/?q=' + post_name)
+        news = driver.find_elements_by_xpath(Path.news_xpath)
         comments = []
-        postgres.write_pstgres(data)
-    driver.quit()
-    return 'Парсинг Reddit завершен'
+        #index = 1
+        #postgres.drop_sql()
+        #postgres.create_sql()
+        for i in news[:5]:
+            a = i.get_attribute('href')
+            url = {
+                'href': a
+                }
+            urls.append(url)
+        for j in urls:
+            driver.get(j['href'])
 
+            try:
+                header = driver.find_element_by_xpath(Path.header_xpath).text
+            except Exception:
+                header = ' '
+            try:
+                image = driver.find_element_by_xpath(Path.image_xpath).get_attribute('href')
+            except Exception:
+                image = 'Изображение отсутсвует'
+            try:
+                news_link = driver.find_element_by_xpath(Path.news_link_xpath).get_attribute('href')
+            except Exception:
+                news_link = 'Ссылка на внешний источник отсутсвует'
 
-if __name__ == '__main__':
+            try:
+                description = driver.find_element_by_xpath(Path.description_xpath).text
+            except Exception:
+                description = 'Текст поста отсутсвует'
+
+            try:
+                driver.find_element_by_xpath(Path.sort_button_xpath).click()
+                driver.implicitly_wait(4)
+                driver.find_element_by_xpath(Path.sort_1_button_xpath).click()
+                driver.implicitly_wait(4)
+            except Exception:
+                print()
+            try:
+                driver.find_element_by_xpath(Path.comment_unpack_button_xpath).click()
+            except Exception:
+                print()
+
+            try:
+                comment = driver.find_elements_by_xpath(Path.comment_xpath)
+                for id, i in enumerate(comment[0:5]):
+                    id += 1
+                    comments.append((str(id) + '.Comment: ' + i.text))
+                if comments == []:
+                    comments = 'Комментарии отсутсвуют'
+            except Exception:
+                comments = 'Комментарии отсутсвуют'
+
+            data = {
+                    'header': header,
+                    'image': image,
+                    'news_link': news_link,
+                    'description': description,
+                    'comments': comments,
+                    }
+            # print(data)
+            comments = []
+            #index +=1
+            postgres.write_pstgres(data)
+        driver.quit()
+        return text('Парсинг Reddit завершен')
+
     app.run(debug=True)
+
+# if __name__ == '__main__':
+#     app.run(debug=True)
 

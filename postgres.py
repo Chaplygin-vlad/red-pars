@@ -13,12 +13,12 @@ def write_pstgres(data):
 
     cursor = conn.cursor()
 
-    _SQL = "insert into reddit (header, image, news_link, all_text,comments) values (%s,%s,%s,%s,%s)"
+    _SQL = "insert into reddit (header, image, news_link, description,comments) values (%s,%s,%s,%s,%s)"
 
     cursor.execute(_SQL, (data['header'],
                           data['image'],
                           data['news_link'],
-                          data['all_text'],
+                          data['description'],
                           data['comments']))
 
     conn.commit()
@@ -63,10 +63,11 @@ def create_sql():
 
         CREATE TABLE Reddit
         (
+        ID SERIAL PRIMARY KEY,
         HEADER TEXT NOT NULL,
         IMAGE TEXT NOT NULL,
         NEWS_LINK TEXT NOT NULL,
-        ALL_TEXT TEXT NOT NULL,
+        description TEXT NOT NULL,
         COMMENTS TEXT NOT NULL
         )
 
