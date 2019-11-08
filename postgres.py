@@ -1,7 +1,7 @@
 import psycopg2
 
 
-def write_pstgres(data):
+def write_pstgres(header, all_description, comments):
     DB_NAME = "ffcvdwpe"
     DB_USER = "ffcvdwpe"
     DB_PASS = "ehGq2l8TRqXPmdPRmhOr6hy5D2zwoBNt"
@@ -13,13 +13,11 @@ def write_pstgres(data):
 
     cursor = conn.cursor()
 
-    _SQL = "insert into reddit (header, image, news_link, description,comments) values (%s,%s,%s,%s,%s)"
+    _SQL = "insert into reddit (header, all_description,comments) values (%s,%s,%s)"
 
-    cursor.execute(_SQL, (data['header'],
-                          data['image'],
-                          data['news_link'],
-                          data['description'],
-                          data['comments']))
+    cursor.execute(_SQL, (header,
+                          all_description,
+                          comments))
 
     conn.commit()
     cursor.close()
@@ -65,9 +63,7 @@ def create_sql():
         (
         ID SERIAL PRIMARY KEY,
         HEADER TEXT NOT NULL,
-        IMAGE TEXT NOT NULL,
-        NEWS_LINK TEXT NOT NULL,
-        description TEXT NOT NULL,
+        ALL_DESCRIPTION TEXT NOT NULL,
         COMMENTS TEXT NOT NULL
         )
 

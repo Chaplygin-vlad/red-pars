@@ -3,16 +3,15 @@ from sanic import Sanic
 from sanic.response import text
 import postgres
 import Path
+import main_trello
 
 
 def sanic_start():
-
     app = Sanic()
 
     @app.route("/")
     async def main_page(request):
         return text('Приложение для парсинга Reddit.com.  Добавьте к адресной строке "/search/<ваш запрос>" для поиска')
-
 
     @app.route('/search/<post_name>')
     async def parsing_reddit(request, post_name):
@@ -21,14 +20,11 @@ def sanic_start():
         driver.get('https://www.reddit.com/search/?q=' + post_name)
         news = driver.find_elements_by_xpath(Path.news_xpath)
         comments = []
-        #index = 1
-        #postgres.drop_sql()
-        #postgres.create_sql()
         for i in news[:5]:
             a = i.get_attribute('href')
             url = {
                 'href': a
-                }
+            }
             urls.append(url)
         for j in urls:
             driver.get(j['href'])
@@ -67,28 +63,17 @@ def sanic_start():
                 comment = driver.find_elements_by_xpath(Path.comment_xpath)
                 for id, i in enumerate(comment[0:5]):
                     id += 1
-                    comments.append((str(id) + '.Comment: ' + i.text))
+                    comments.append((str(id) + '.comment: ' + i.text))
                 if comments == []:
                     comments = 'Комментарии отсутсвуют'
             except Exception:
                 comments = 'Комментарии отсутсвуют'
 
-            data = {
-                    'header': header,
-                    'image': image,
-                    'news_link': news_link,
-                    'description': description,
-                    'comments': comments,
-                    }
-            # print(data)
+            all_description = image + '\n\n' + news_link + '\n\n' + description
+            postgres.write_pstgres(header, all_description, comments)
             comments = []
-            #index +=1
-            postgres.write_pstgres(data)
         driver.quit()
+        main_trello.add_trello()
         return text('Парсинг Reddit завершен')
 
     app.run(debug=True)
-
-# if __name__ == '__main__':
-#     app.run(debug=True)
-
