@@ -16,22 +16,26 @@ def add_trello():
                             host=DB_HOST,
                             port=DB_PORT)
     cursor = conn.cursor()
-    cursor.execute('SELECT id, header, all_description, comments FROM reddit')
+    cursor.execute('SELECT id, header, all_description FROM reddit_posts')
     records = cursor.fetchall()
 
-    board = api_trello.create_board()
-    reggit_list = api_trello.create_list(board)
-
-    for id, header, description, comments in records:
+    board = api_trello.get_reggit_board()
+    if board is None:
+        board = api_trello.create_board()
+    reggit_list = api_trello.get_reggit_list()
+    if reggit_list is None:
+        reggit_list = api_trello.create_list(board)
+    for id, header, description in records:
         id_card = api_trello.create_card(reggit_list, header, description[:1300])
-        # print(type(description),len(description), description )
-        comments = comments.split('","')
+        id = str(id)
+        cursor.execute('SELECT id, comments FROM reddit_comments WHERE post_id = %s', (id))
+        comments = cursor.fetchall()
 
-        for comment in comments:
-            comment = comment.replace('"', '')
-            comment = comment.replace('{', '')
-            comment = comment.replace('}', '')
-            api_trello.create_comment(id_card, str(comment))
+        for id, comment in comments:
+            api_trello.create_comment(id_card, comment)
 
     cursor.close()
     conn.close()
+
+
+

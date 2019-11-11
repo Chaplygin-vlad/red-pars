@@ -5,11 +5,25 @@ from pprint import pprint
 token = "9c60addb817a96d319088bdba7eb0a2e74523962dbaae09efb56bd75cc739497"
 key = "c2de0db812668e1f432a55aa3fc75de6"
 
+def get_reggit_board():
+    params = {
+        'token': token,
+        'key': key,
+        'fields': ['name', 'url']
+    }
+    url_for_board = "https://api.trello.com/1/members/me/boards"
+    boards = requests.get(url_for_board, params=params).json()
+    for board in boards:
+        if board['name']=='Reddit':
+            print('Reddit уже создана')
+            return board['id']
+    return None
+
 
 def create_board():
     url = "https://api.trello.com/1/boards/"
 
-    querystring = {"name": "Reggit",
+    querystring = {"name": "Reddit",
                    "defaultLabels": "true",
                    "defaultLists": "true",
                    "keepFromSource": "none",
@@ -28,10 +42,13 @@ def create_board():
     board = json.loads(response.text)
     return board['id']
 
+def get_reggit_list():
+    return None
+
 
 def create_list(id_board):
     url = "https://api.trello.com/1/lists"
-    querystring = {"name": "List from Reggit",
+    querystring = {"name": "Post from Reddit",
                    "idBoard": id_board,
                    "key": key,
                    "token": token}
